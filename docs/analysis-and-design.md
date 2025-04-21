@@ -6,46 +6,68 @@ This document outlines the **analysis** and **design** process for your microser
 
 ## 1. 🎯 Problem Statement
 
-_Describe the problem your system is solving._
+The system is an online quiz platform that enables students to participate in multiple-choice exams. It authenticates students, delivers questions, collects answers, enforces time limits, grades submissions, and stores results.
 
-- Who are the users?
-- What are the main goals?
-- What kind of data is processed?
-
-> Example: A course management system that allows students to register for courses and teachers to manage class rosters.
-
----
+- **Users**:
+  - **Students**: users who take quizzes  
+  - **administrators**: manage quiz content and results
+- **Main Goals**:
+  - Authenticate students securely using their name or student ID.
+  - Deliver quiz questions and collect answers within a specified time limit.
+  - Grade answers accurately and store results for future reference.
+  - Ensure scalability and independent deployment of system components.
+- **Data Processed**:
+  - Student information (name, student ID, authentication credentials).
+  - Quiz content (questions, answer options, correct answers).
+  - Student responses and quiz results (scores, submission timestamps).
 
 ## 2. 🧩 Identified Microservices
 
-List the microservices in your system and their responsibilities.
+The system is divided into microservices, each with specific responsibilities and technology stacks.
 
-| Service Name  | Responsibility                                | Tech Stack   |
-|---------------|------------------------------------------------|--------------|
-| service-a     | Handles user authentication and authorization | Python Flask |
-| service-b     | Manages course registration and class data    | Python Flask |
-| gateway       | Routes requests to services                   | Nginx / Flask|
+| Service Name | Responsibility | Tech Stack |
+| --- | --- | --- |
+| Auth Service | Handles student authentication and authorization | Python Flask, JWT |
+| Quiz Service | Manages quiz content (questions, answers) and delivers questions to students | Python Flask, SQL |
+| Submission Service | Collects student answers, enforces time limits, grades submissions, and stores results | Python Flask, SQL |
+| Gateway | Routes incoming requests to appropriate services | Nginx, Flask |
 
 ---
 
 ## 3. 🔄 Service Communication
 
-Describe how your services communicate (e.g., REST APIs, message queue, gRPC).
+Services communicate primarily via REST APIs for simplicity and compatibility. Asynchronous communication is used for non-critical operations, such as logging results.
 
-- Gateway ⇄ service-a (REST)
-- Gateway ⇄ service-b (REST)
-- Internal: service-a ⇄ service-b (optional)
+- **Gateway ⇄ Auth Service**: REST API for student authentication (e.g., POST /auth/login).
+- **Gateway ⇄ Quiz Service**: REST API for retrieving quiz questions (e.g., GET /quizzes/{quiz_id}/questions).
+- **Gateway ⇄ Submission Service**: REST API for submitting answers and retrieving results (e.g., POST /submissions).
+- **Internal Communication**:
+  - **Quiz Service ⇄ Submission Service**: REST API to fetch correct answers for grading (e.g., GET /questions/{question_id}/answer).
+  - **Submission Service → Message Queue (optional)**: Uses RabbitMQ for asynchronous logging of results to ensure reliability.
 
 ---
 
 ## 4. 🗂️ Data Design
 
-Describe how data is structured and stored in each service.
+Each service manages its own database to ensure loose coupling and independent scaling.
 
-- service-a: User accounts, credentials
-- service-b: Course catalog, registrations
-
-Use diagrams if possible (DB schema, ERD, etc.)
+- **Auth Service**:
+  - **Database**: PostgreSQL
+  - **Schema**:
+    - `students(id, student_id, name, password_hash, role)`
+  - Stores student credentials and roles for authentication and access control.
+- **Quiz Service**:
+  - **Database**: PostgreSQL
+  - **Schema**:
+    - `quizzes(id, title, duration, start_time, end_time)`
+    - `questions(id, quiz_id, text, options, correct_answer)`
+  - Manages quiz metadata and question content.
+- **Submission Service**:
+  - **Database**: PostgreSQL
+  - **Schema**:
+    - `submissions(id, student_id, quiz_id, submission_time, score)`
+    - `answers(id, submission_id, question_id, student_answer)`
+  - Stores student answers and final scores.
 
 ---
 
