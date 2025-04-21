@@ -49,7 +49,7 @@ Services communicate primarily via REST APIs for simplicity and compatibility. A
 
 ## 4. 🗂️ Data Design
 
-Each service manages its own database to ensure loose coupling and independent scaling.
+Each service manages its own database to ensure loose coupling and independent scaling
 
 - **Auth Service**:
   - **Database**: PostgreSQL
